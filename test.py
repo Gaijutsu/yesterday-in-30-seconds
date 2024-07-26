@@ -5,11 +5,10 @@ import requests
 from io import BytesIO
 from pathlib import Path
 from openai import OpenAI
-import tempfile
 
 from api_secrets import API_KEY
 
-client = OpenAI()
+client = OpenAI(api_key=API_KEY)
 
 # Step 1: Fetch the RSS feed
 def fetch_feed(url):
@@ -31,11 +30,11 @@ def download_image(url):
         response = requests.get(url)
         img = Image.open(BytesIO(response.content))
         img = img.convert('RGB')  # Convert to RGB mode
-        # img = img.resize((1920, 1080))  # Resize for video standard
+        img = img.resize((1920, 1080))  # Resize for video standard
         return img
 
 # Step 4: Convert summary to speech
-def text_to_speech(text, file, lang='en'):
+def text_to_speech(text, lang='en'):
     speech_file_path = Path(__file__).parent / f"{text[:5]}.mp3"
     with client.audio.speech.with_streaming_response.create(
         model="tts-1",
@@ -62,16 +61,12 @@ def main():
     for summary, image_url in contents:
         img = download_image(image_url)
         if img:
-            if img:
-                with tempfile.NamedTemporaryFile(suffix=".mp3") as temp_audio_file, \
-                        tempfile.NamedTemporaryFile(suffix=".jpg") as temp_image_file:
-                    img.save(temp_image_file.name)
-                    audio_file = text_to_speech(summary, temp_audio_file.name)
-                    clip = create_video_clip(temp_image_file.name, audio_file)
-                    clips.append(clip)
-    for i, clip in enumerate(clips):
-        clip.write_videofile(f"{i}.mp4", codec='libx264', fps=30)
-    final_clip = concatenate_videoclips(clips, method='compose', padding=0.5)
+            img.save("temp.jpg")
+            audio_file = text_to_speech(summary)
+            clip = create_video_clip("temp.jpg", audio_file)
+            clips.append(clip)
+
+    final_clip = concatenate_videoclips(clips, method='compose')
     final_clip.write_videofile("final_video.mp4", codec='libx264', fps=30)
 
 if __name__ == "__main__":
