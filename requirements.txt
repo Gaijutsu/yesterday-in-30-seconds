@@ -2,3 +2,10 @@ feedparser
 moviepy
 Pillow
 openai
+# gTTS
+# langchain
+# langchain-openai
+# langchain-community
+dotenv
+ffmpeg-python
+flask
